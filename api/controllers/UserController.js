@@ -17,16 +17,52 @@
 
 var UserController = {
 
-  findByUserName: function(req, res) {
-    User.findOneByUserName(req.param('name')).exec(function(err, user){
-      if (err) {
-        res.send(err);
-      }
-      else {
-        res.json(user);
+  // findByUserName: function(req, res) {
+  //   User.findOneByUserName(req.param('name')).exec(function(err, user){
+  //     if (user === undefined) {
+  //       res.send('User ' + req.param('name') + ' not found!');
+  //     }
+  //     else {
+  //       res.json(user);
+  //     }
+  //   });
+  // },
+ 
+  login: function (req, res) {
+    var bcrypt = require('bcrypt');
+
+    User.findOneByEmail(req.param('email')).done(function (err, user) {
+      if (err) res.json({ error: 'DB error' }, 500);
+
+      if (user) {
+        bcrypt.compare(req.param('password'), user.password, function (err, match) {
+          if (err) res.json({ error: 'Server error' }, 500);
+
+          if (match) {
+            // password match
+            req.session.user = user.id;
+            res.json(user);
+          } else {
+            // invalid password
+            req.session.user = null;
+            res.json({ error: 'Invalid password' }, 400);
+          }
+        });
+      } else {
+        res.json({ error: 'User not found' }, 404);
       }
     });
+  },
+
+  logout: function(req, res) {
+    req.session.user = null;
+    res.json({ success: 'Logged out'});
   }
+  
+
+
+
 }
+
 
 module.exports = UserController;
